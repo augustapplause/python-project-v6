@@ -37,14 +37,16 @@ PROVINCE_NAMES = {
     "SK": "Saskatchewan", "YT": "Yukon",
 }
 
-DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
-DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
+DEFAULT_SINGLE_ADDRESS = "50 Victoria St, Gatineau, Quebec"
+DEFAULT_COMPARE_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
+DEFAULT_COMPARE_ADDRESS_B = "301 Wellington St, Ottawa, Ontario"
 
 
 def init_persistent_state():
     defaults = {
-        "address_a_value": DEFAULT_ADDRESS_A,
-        "address_b_value": DEFAULT_ADDRESS_B,
+        "single_address_value": DEFAULT_SINGLE_ADDRESS,
+        "compare_address_a_value": DEFAULT_COMPARE_ADDRESS_A,
+        "compare_address_b_value": DEFAULT_COMPARE_ADDRESS_B,
         "single_radius_km_value": 1.0,
         "single_overlap_pct_value": 5,
         "compare_radius_km_value": 1.0,
@@ -67,20 +69,54 @@ def save_widget_value(widget_key: str, value_key: str):
 
 init_persistent_state()
 
-DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
-DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
 
-if "single_radius_km" not in st.session_state:
-    st.session_state.single_radius_km = 1.0
+# -----------------------------
+# Comparison view visual controls
+# Change these pixel values to adjust comparison page font sizes
+# -----------------------------
+COMPARE_ADDRESS_LABEL_FONT_SIZE = 18
+COMPARE_ADDRESS_INPUT_FONT_SIZE = 18
+COMPARE_SLIDER_LABEL_FONT_SIZE = 18
+COMPARE_TABLE_HEADER_FONT_SIZE = 24
+COMPARE_TABLE_CELL_FONT_SIZE = 20
 
-if "single_overlap_pct" not in st.session_state:
-    st.session_state.single_overlap_pct = 5
 
-if "compare_radius_km" not in st.session_state:
-    st.session_state.compare_radius_km = 1.0
+def inject_comparison_css():
+    st.markdown(f"""
+    <style>
+    /* Address input labels */
+    div[data-testid="stTextInput"] label {{
+        font-size: {COMPARE_ADDRESS_LABEL_FONT_SIZE}px !important;
+        font-weight: 600 !important;
+    }}
 
-if "compare_overlap_pct" not in st.session_state:
-    st.session_state.compare_overlap_pct = 5
+    /* Address input box text */
+    div[data-testid="stTextInput"] input {{
+        font-size: {COMPARE_ADDRESS_INPUT_FONT_SIZE}px !important;
+    }}
+
+    /* Slider labels */
+    div[data-testid="stSlider"] label {{
+        font-size: {COMPARE_SLIDER_LABEL_FONT_SIZE}px !important;
+        font-weight: 600 !important;
+    }}
+
+    /* Comparison summary table */
+    div[data-testid="stTable"] table {{
+        font-size: {COMPARE_TABLE_CELL_FONT_SIZE}px !important;
+    }}
+
+    div[data-testid="stTable"] th {{
+        font-size: {COMPARE_TABLE_HEADER_FONT_SIZE}px !important;
+        font-weight: 700 !important;
+    }}
+
+    div[data-testid="stTable"] td {{
+        font-size: {COMPARE_TABLE_CELL_FONT_SIZE}px !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
 
 
 @st.cache_data(show_spinner=False)
@@ -350,14 +386,14 @@ def make_map(catchment: dict, radius_km: float, height: int = 430):
 def show_single_address_view():
     st.sidebar.title("Inputs & Outputs (v5.0)")
 
-    prepare_widget("_address_a", "address_a_value")
+    prepare_widget("_single_address", "single_address_value")
     st.sidebar.text_input(
         "Centre on Address or Postal Code:",
-        key="_address_a",
+        key="_single_address",
         on_change=save_widget_value,
-        args=("_address_a", "address_a_value")
+        args=("_single_address", "single_address_value")
     )
-    address = st.session_state["address_a_value"]
+    address = st.session_state["single_address_value"]
 
     prepare_widget("_single_radius_km", "single_radius_km_value")
     st.sidebar.slider(
@@ -596,29 +632,31 @@ def comparison_difference(metric_name: str, a, b):
 
 
 def show_comparison_view():
+    inject_comparison_css()
+
     st.title("Compare Two Census Catchments")
 
     control_col1, control_col2 = st.columns(2)
 
     with control_col1:
-        prepare_widget("_address_a", "address_a_value")
+        prepare_widget("_compare_address_a", "compare_address_a_value")
         st.text_input(
             "Address A",
-            key="_address_a",
+            key="_compare_address_a",
             on_change=save_widget_value,
-            args=("_address_a", "address_a_value")
+            args=("_compare_address_a", "compare_address_a_value")
         )
-        address_a = st.session_state["address_a_value"]
+        address_a = st.session_state["compare_address_a_value"]
 
     with control_col2:
-        prepare_widget("_address_b", "address_b_value")
+        prepare_widget("_compare_address_b", "compare_address_b_value")
         st.text_input(
             "Address B",
-            key="_address_b",
+            key="_compare_address_b",
             on_change=save_widget_value,
-            args=("_address_b", "address_b_value")
+            args=("_compare_address_b", "compare_address_b_value")
         )
-        address_b = st.session_state["address_b_value"]
+        address_b = st.session_state["compare_address_b_value"]
 
     slider_col1, slider_col2 = st.columns(2)
 
@@ -711,21 +749,6 @@ def show_comparison_view():
     comparison_df = pd.DataFrame(comparison_rows)
 
     st.subheader("Comparison Summary")
-
-    st.markdown("""
-    <style>
-    div[data-testid="stTable"] table {
-        font-size: 20px !important;
-    }
-    div[data-testid="stTable"] th {
-        font-size: 24px !important;
-        font-weight: 700 !important;
-    }
-    div[data-testid="stTable"] td {
-        font-size: 20px !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
     st.table(comparison_df)
 

@@ -40,11 +40,35 @@ PROVINCE_NAMES = {
 DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
 DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
 
-if "address_a" not in st.session_state:
-    st.session_state.address_a = DEFAULT_ADDRESS_A
 
-if "address_b" not in st.session_state:
-    st.session_state.address_b = DEFAULT_ADDRESS_B
+def init_persistent_state():
+    defaults = {
+        "address_a_value": DEFAULT_ADDRESS_A,
+        "address_b_value": DEFAULT_ADDRESS_B,
+        "single_radius_km_value": 1.0,
+        "single_overlap_pct_value": 5,
+        "compare_radius_km_value": 1.0,
+        "compare_overlap_pct_value": 5,
+    }
+
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
+def prepare_widget(widget_key: str, value_key: str):
+    if widget_key not in st.session_state:
+        st.session_state[widget_key] = st.session_state[value_key]
+
+
+def save_widget_value(widget_key: str, value_key: str):
+    st.session_state[value_key] = st.session_state[widget_key]
+
+
+init_persistent_state()
+
+DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
+DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
 
 if "single_radius_km" not in st.session_state:
     st.session_state.single_radius_km = 1.0
@@ -326,29 +350,38 @@ def make_map(catchment: dict, radius_km: float, height: int = 430):
 def show_single_address_view():
     st.sidebar.title("Inputs & Outputs (v5.0)")
 
+    prepare_widget("_address_a", "address_a_value")
     st.sidebar.text_input(
         "Centre on Address or Postal Code:",
-        key="address_a"
+        key="_address_a",
+        on_change=save_widget_value,
+        args=("_address_a", "address_a_value")
     )
-    address = st.session_state.address_a
+    address = st.session_state["address_a_value"]
 
+    prepare_widget("_single_radius_km", "single_radius_km_value")
     st.sidebar.slider(
         "Radius (km):",
         min_value=0.5,
         max_value=10.0,
         step=0.5,
-        key="single_radius_km"
+        key="_single_radius_km",
+        on_change=save_widget_value,
+        args=("_single_radius_km", "single_radius_km_value")
     )
-    radius_km = st.session_state.single_radius_km
+    radius_km = st.session_state["single_radius_km_value"]
 
+    prepare_widget("_single_overlap_pct", "single_overlap_pct_value")
     st.sidebar.slider(
         "Min DA overlap (0% = intersection only):",
         min_value=0,
         max_value=50,
         step=1,
-        key="single_overlap_pct"
+        key="_single_overlap_pct",
+        on_change=save_widget_value,
+        args=("_single_overlap_pct", "single_overlap_pct_value")
     )
-    min_overlap_pct = st.session_state.single_overlap_pct
+    min_overlap_pct = st.session_state["single_overlap_pct_value"]
 
     with st.spinner("Building catchment..."):
         catchment = build_catchment(address, radius_km, min_overlap_pct)
@@ -568,40 +601,52 @@ def show_comparison_view():
     control_col1, control_col2 = st.columns(2)
 
     with control_col1:
+        prepare_widget("_address_a", "address_a_value")
         st.text_input(
             "Address A",
-            key="address_a"
+            key="_address_a",
+            on_change=save_widget_value,
+            args=("_address_a", "address_a_value")
         )
-        address_a = st.session_state.address_a
+        address_a = st.session_state["address_a_value"]
 
     with control_col2:
+        prepare_widget("_address_b", "address_b_value")
         st.text_input(
             "Address B",
-            key="address_b"
+            key="_address_b",
+            on_change=save_widget_value,
+            args=("_address_b", "address_b_value")
         )
-        address_b = st.session_state.address_b
+        address_b = st.session_state["address_b_value"]
 
     slider_col1, slider_col2 = st.columns(2)
 
     with slider_col1:
+        prepare_widget("_compare_radius_km", "compare_radius_km_value")
         st.slider(
             "Radius (km)",
             min_value=0.5,
             max_value=10.0,
             step=0.5,
-            key="compare_radius_km"
+            key="_compare_radius_km",
+            on_change=save_widget_value,
+            args=("_compare_radius_km", "compare_radius_km_value")
         )
-        radius_km = st.session_state.compare_radius_km
+        radius_km = st.session_state["compare_radius_km_value"]
 
     with slider_col2:
+        prepare_widget("_compare_overlap_pct", "compare_overlap_pct_value")
         st.slider(
             "Min DA overlap (0% = intersection only)",
             min_value=0,
             max_value=50,
             step=1,
-            key="compare_overlap_pct"
+            key="_compare_overlap_pct",
+            on_change=save_widget_value,
+            args=("_compare_overlap_pct", "compare_overlap_pct_value")
         )
-        min_overlap_pct = st.session_state.compare_overlap_pct
+        min_overlap_pct = st.session_state["compare_overlap_pct_value"]
 
     with st.spinner("Building comparison catchments..."):
         catchment_a = build_catchment(address_a, radius_km, min_overlap_pct)

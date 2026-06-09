@@ -104,11 +104,13 @@ def inject_comparison_css():
         font-size: {COMPARE_ADDRESS_INPUT_FONT_SIZE}px !important;
     }}
 
-    /* Slider labels */
-    div[data-testid="stSlider"] label {{
-        font-size: {COMPARE_SLIDER_LABEL_FONT_SIZE}px !important;
-        font-weight: 600 !important;
-    }}
+/* Slider labels */
+div[data-testid="stSlider"] label,
+div[data-testid="stSlider"] label p,
+div[data-testid="stSlider"] p {
+    font-size: {COMPARE_SLIDER_LABEL_FONT_SIZE}px !important;
+    font-weight: 600 !important;
+}
 
     /* Comparison summary table */
     div[data-testid="stTable"] table {{

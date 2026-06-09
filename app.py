@@ -715,14 +715,14 @@ def show_comparison_view():
     st.markdown("""
     <style>
     div[data-testid="stTable"] table {
-        font-size: 18px !important;
+        font-size: 20px !important;
     }
     div[data-testid="stTable"] th {
-        font-size: 18px !important;
+        font-size: 24px !important;
         font-weight: 700 !important;
     }
     div[data-testid="stTable"] td {
-        font-size: 18px !important;
+        font-size: 20px !important;
     }
     </style>
     """, unsafe_allow_html=True)

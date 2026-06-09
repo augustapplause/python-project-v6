@@ -675,9 +675,13 @@ def show_comparison_view():
     slider_col1, slider_col2 = st.columns(2)
 
     with slider_col1:
+        st.markdown(
+            f"<div style='font-size:{COMPARE_SLIDER_LABEL_FONT_SIZE}px;font-weight:700;'>Radius (km)</div>",
+            unsafe_allow_html=True
+        )
         prepare_widget("_compare_radius_km", "compare_radius_km_value")
         st.slider(
-            "Radius (km)",
+            "",
             min_value=0.5,
             max_value=10.0,
             step=0.5,
@@ -688,9 +692,13 @@ def show_comparison_view():
         radius_km = st.session_state["compare_radius_km_value"]
 
     with slider_col2:
+        st.markdown(
+            f"<div style='font-size:{COMPARE_SLIDER_LABEL_FONT_SIZE}px;font-weight:700;'>Min DA overlap (0% = intersection only)</div>",
+            unsafe_allow_html=True
+        )
         prepare_widget("_compare_overlap_pct", "compare_overlap_pct_value")
         st.slider(
-            "Min DA overlap (0% = intersection only)",
+            "",
             min_value=0,
             max_value=50,
             step=1,

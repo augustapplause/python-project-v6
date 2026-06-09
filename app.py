@@ -300,28 +300,47 @@ def make_map(catchment: dict, radius_km: float, height: int = 430):
     )
 
 
+DEFAULT_SINGLE_ADDRESS = "50 Victoria St, Gatineau, Quebec"
+DEFAULT_COMPARE_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
+
+if "single_address" not in st.session_state:
+    st.session_state["single_address"] = DEFAULT_SINGLE_ADDRESS
+
+if "compare_address_a" not in st.session_state:
+    st.session_state["compare_address_a"] = st.session_state["single_address"]
+
+if "compare_address_b" not in st.session_state:
+    st.session_state["compare_address_b"] = DEFAULT_COMPARE_ADDRESS_B
+
+if "shared_radius_km" not in st.session_state:
+    st.session_state["shared_radius_km"] = 1.0
+
+if "shared_overlap_pct" not in st.session_state:
+    st.session_state["shared_overlap_pct"] = 5
+
+
 def show_single_address_view():
     st.sidebar.title("Inputs & Outputs (v5.0)")
 
     address = st.sidebar.text_input(
         "Centre on Address or Postal Code:",
-        value="50 Victoria St, Gatineau, Quebec"
+        key="single_address"
     )
 
     radius_km = st.sidebar.slider(
         "Radius (km):",
         min_value=0.5,
         max_value=10.0,
-        value=1.0,
-        step=0.5
+        step=0.5,
+        key="shared_radius_km"
     )
 
     min_overlap_pct = st.sidebar.slider(
         "Min DA overlap (0% = intersection only):",
         min_value=0,
         max_value=50,
-        value=5,
-        step=1
+        step=1,
+        key="shared_overlap_pct"
     )
 
     with st.spinner("Building catchment..."):
@@ -516,6 +535,8 @@ def show_single_address_view():
 def comparison_value(metric_name: str, value):
     if metric_name == "Avg Household Income":
         return f"${value:,.0f}"
+    if metric_name == "Estimated DA Income":
+        return f"${value / 1_000_000:,.1f}M"
     return f"{value:,.0f}"
 
 
@@ -525,6 +546,10 @@ def comparison_difference(metric_name: str, a, b):
     if metric_name == "Avg Household Income":
         sign = "+" if diff >= 0 else "-"
         return f"{sign}${abs(diff):,.0f}"
+
+    if metric_name == "Estimated DA Income":
+        sign = "+" if diff >= 0 else "-"
+        return f"{sign}${abs(diff) / 1_000_000:,.1f}M"
 
     sign = "+" if diff >= 0 else ""
     return f"{sign}{diff:,.0f}"
@@ -538,13 +563,13 @@ def show_comparison_view():
     with control_col1:
         address_a = st.text_input(
             "Address A",
-            value="50 Victoria St, Gatineau, Quebec"
+            key="compare_address_a"
         )
 
     with control_col2:
         address_b = st.text_input(
             "Address B",
-            value="1 Presidents Choice Circle, Brampton, Ontario"
+            key="compare_address_b"
         )
 
     slider_col1, slider_col2 = st.columns(2)
@@ -554,8 +579,8 @@ def show_comparison_view():
             "Radius (km)",
             min_value=0.5,
             max_value=10.0,
-            value=1.0,
-            step=0.5
+            step=0.5,
+            key="shared_radius_km"
         )
 
     with slider_col2:
@@ -563,8 +588,8 @@ def show_comparison_view():
             "Min DA overlap (0% = intersection only)",
             min_value=0,
             max_value=50,
-            value=5,
-            step=1
+            step=1,
+            key="shared_overlap_pct"
         )
 
     with st.spinner("Building comparison catchments..."):
@@ -590,6 +615,12 @@ def show_comparison_view():
             "Difference": comparison_difference("Total Population", metrics_a["total_population"], metrics_b["total_population"]),
         },
         {
+            "Metric": "Population 0-19",
+            "Address A": comparison_value("Population 0-19", catchment_a["selected"]["population_0_19"].fillna(0).sum()),
+            "Address B": comparison_value("Population 0-19", catchment_b["selected"]["population_0_19"].fillna(0).sum()),
+            "Difference": comparison_difference("Population 0-19", catchment_a["selected"]["population_0_19"].fillna(0).sum(), catchment_b["selected"]["population_0_19"].fillna(0).sum()),
+        },
+        {
             "Metric": "Population 65+",
             "Address A": comparison_value("Population 65+", metrics_a["seniors_65"]),
             "Address B": comparison_value("Population 65+", metrics_b["seniors_65"]),
@@ -602,16 +633,22 @@ def show_comparison_view():
             "Difference": comparison_difference("Population 0-39", metrics_a["pop_0_39"], metrics_b["pop_0_39"]),
         },
         {
+            "Metric": "Number of Households",
+            "Address A": f"{metrics_a['total_households']:,.0f} ({metrics_a['owner_pct']}% owned)",
+            "Address B": f"{metrics_b['total_households']:,.0f} ({metrics_b['owner_pct']}% owned)",
+            "Difference": comparison_difference("Number of Households", metrics_a["total_households"], metrics_b["total_households"]),
+        },
+        {
             "Metric": "Avg Household Income",
             "Address A": comparison_value("Avg Household Income", metrics_a["weighted_average_household_income"]),
             "Address B": comparison_value("Avg Household Income", metrics_b["weighted_average_household_income"]),
             "Difference": comparison_difference("Avg Household Income", metrics_a["weighted_average_household_income"], metrics_b["weighted_average_household_income"]),
         },
         {
-            "Metric": "Number of Households",
-            "Address A": comparison_value("Number of Households", metrics_a["total_households"]),
-            "Address B": comparison_value("Number of Households", metrics_b["total_households"]),
-            "Difference": comparison_difference("Number of Households", metrics_a["total_households"], metrics_b["total_households"]),
+            "Metric": "Estimated DA Income",
+            "Address A": comparison_value("Estimated DA Income", metrics_a["estimated_da_income"]),
+            "Address B": comparison_value("Estimated DA Income", metrics_b["estimated_da_income"]),
+            "Difference": comparison_difference("Estimated DA Income", metrics_a["estimated_da_income"], metrics_b["estimated_da_income"]),
         },
     ]
 

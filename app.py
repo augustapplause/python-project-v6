@@ -38,7 +38,7 @@ PROVINCE_NAMES = {
 }
 
 DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
-DEFAULT_ADDRESS_B = "301 Wellington St, Ottawa, Ontario"
+DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
 
 
 def init_persistent_state():
@@ -68,7 +68,7 @@ def save_widget_value(widget_key: str, value_key: str):
 init_persistent_state()
 
 DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
-DEFAULT_ADDRESS_B = "301 Wellington St, Ottawa, Ontario"
+DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
 
 if "single_radius_km" not in st.session_state:
     st.session_state.single_radius_km = 1.0
@@ -711,11 +711,23 @@ def show_comparison_view():
     comparison_df = pd.DataFrame(comparison_rows)
 
     st.subheader("Comparison Summary")
-    st.dataframe(
-        comparison_df,
-        use_container_width=True,
-        hide_index=True,
-    )
+
+    st.markdown("""
+    <style>
+    div[data-testid="stTable"] table {
+        font-size: 18px !important;
+    }
+    div[data-testid="stTable"] th {
+        font-size: 18px !important;
+        font-weight: 700 !important;
+    }
+    div[data-testid="stTable"] td {
+        font-size: 18px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.table(comparison_df)
 
     map_col1, map_col2 = st.columns(2)
 

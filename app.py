@@ -37,6 +37,27 @@ PROVINCE_NAMES = {
     "SK": "Saskatchewan", "YT": "Yukon",
 }
 
+DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
+DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
+
+if "address_a" not in st.session_state:
+    st.session_state.address_a = DEFAULT_ADDRESS_A
+
+if "address_b" not in st.session_state:
+    st.session_state.address_b = DEFAULT_ADDRESS_B
+
+if "single_radius_km" not in st.session_state:
+    st.session_state.single_radius_km = 1.0
+
+if "single_overlap_pct" not in st.session_state:
+    st.session_state.single_overlap_pct = 5
+
+if "compare_radius_km" not in st.session_state:
+    st.session_state.compare_radius_km = 1.0
+
+if "compare_overlap_pct" not in st.session_state:
+    st.session_state.compare_overlap_pct = 5
+
 
 @st.cache_data(show_spinner=False)
 def load_province_geojson(province_code: str, release_base_url: str) -> gpd.GeoDataFrame:
@@ -300,51 +321,34 @@ def make_map(catchment: dict, radius_km: float, height: int = 430):
     )
 
 
-DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
-DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
-
-if "address_a" not in st.session_state:
-    st.session_state["address_a"] = DEFAULT_ADDRESS_A
-
-if "address_b" not in st.session_state:
-    st.session_state["address_b"] = DEFAULT_ADDRESS_B
-
-if "single_radius_km" not in st.session_state:
-    st.session_state["single_radius_km"] = 1.0
-
-if "single_overlap_pct" not in st.session_state:
-    st.session_state["single_overlap_pct"] = 5
-
-if "compare_radius_km" not in st.session_state:
-    st.session_state["compare_radius_km"] = 1.0
-
-if "compare_overlap_pct" not in st.session_state:
-    st.session_state["compare_overlap_pct"] = 5
 
 
 def show_single_address_view():
     st.sidebar.title("Inputs & Outputs (v5.0)")
 
-    address = st.sidebar.text_input(
+    st.sidebar.text_input(
         "Centre on Address or Postal Code:",
         key="address_a"
     )
+    address = st.session_state.address_a
 
-    radius_km = st.sidebar.slider(
+    st.sidebar.slider(
         "Radius (km):",
         min_value=0.5,
         max_value=10.0,
         step=0.5,
         key="single_radius_km"
     )
+    radius_km = st.session_state.single_radius_km
 
-    min_overlap_pct = st.sidebar.slider(
+    st.sidebar.slider(
         "Min DA overlap (0% = intersection only):",
         min_value=0,
         max_value=50,
         step=1,
         key="single_overlap_pct"
     )
+    min_overlap_pct = st.session_state.single_overlap_pct
 
     with st.spinner("Building catchment..."):
         catchment = build_catchment(address, radius_km, min_overlap_pct)
@@ -564,36 +568,40 @@ def show_comparison_view():
     control_col1, control_col2 = st.columns(2)
 
     with control_col1:
-        address_a = st.text_input(
+        st.text_input(
             "Address A",
             key="address_a"
         )
+        address_a = st.session_state.address_a
 
     with control_col2:
-        address_b = st.text_input(
+        st.text_input(
             "Address B",
             key="address_b"
         )
+        address_b = st.session_state.address_b
 
     slider_col1, slider_col2 = st.columns(2)
 
     with slider_col1:
-        radius_km = st.slider(
+        st.slider(
             "Radius (km)",
             min_value=0.5,
             max_value=10.0,
             step=0.5,
             key="compare_radius_km"
         )
+        radius_km = st.session_state.compare_radius_km
 
     with slider_col2:
-        min_overlap_pct = st.slider(
+        st.slider(
             "Min DA overlap (0% = intersection only)",
             min_value=0,
             max_value=50,
             step=1,
             key="compare_overlap_pct"
         )
+        min_overlap_pct = st.session_state.compare_overlap_pct
 
     with st.spinner("Building comparison catchments..."):
         catchment_a = build_catchment(address_a, radius_km, min_overlap_pct)

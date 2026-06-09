@@ -300,17 +300,14 @@ def make_map(catchment: dict, radius_km: float, height: int = 430):
     )
 
 
-DEFAULT_SINGLE_ADDRESS = "50 Victoria St, Gatineau, Quebec"
-DEFAULT_COMPARE_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
+DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
+DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
 
-if "single_address" not in st.session_state:
-    st.session_state["single_address"] = DEFAULT_SINGLE_ADDRESS
+if "address_a" not in st.session_state:
+    st.session_state["address_a"] = DEFAULT_ADDRESS_A
 
-if "compare_address_a" not in st.session_state:
-    st.session_state["compare_address_a"] = st.session_state["single_address"]
-
-if "compare_address_b" not in st.session_state:
-    st.session_state["compare_address_b"] = DEFAULT_COMPARE_ADDRESS_B
+if "address_b" not in st.session_state:
+    st.session_state["address_b"] = DEFAULT_ADDRESS_B
 
 if "shared_radius_km" not in st.session_state:
     st.session_state["shared_radius_km"] = 1.0
@@ -324,7 +321,7 @@ def show_single_address_view():
 
     address = st.sidebar.text_input(
         "Centre on Address or Postal Code:",
-        key="single_address"
+        key="address_a"
     )
 
     radius_km = st.sidebar.slider(
@@ -563,13 +560,13 @@ def show_comparison_view():
     with control_col1:
         address_a = st.text_input(
             "Address A",
-            key="compare_address_a"
+            key="address_a"
         )
 
     with control_col2:
         address_b = st.text_input(
             "Address B",
-            key="compare_address_b"
+            key="address_b"
         )
 
     slider_col1, slider_col2 = st.columns(2)

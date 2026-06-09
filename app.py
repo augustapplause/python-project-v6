@@ -309,11 +309,17 @@ if "address_a" not in st.session_state:
 if "address_b" not in st.session_state:
     st.session_state["address_b"] = DEFAULT_ADDRESS_B
 
-if "shared_radius_km" not in st.session_state:
-    st.session_state["shared_radius_km"] = 1.0
+if "single_radius_km" not in st.session_state:
+    st.session_state["single_radius_km"] = 1.0
 
-if "shared_overlap_pct" not in st.session_state:
-    st.session_state["shared_overlap_pct"] = 5
+if "single_overlap_pct" not in st.session_state:
+    st.session_state["single_overlap_pct"] = 5
+
+if "compare_radius_km" not in st.session_state:
+    st.session_state["compare_radius_km"] = 1.0
+
+if "compare_overlap_pct" not in st.session_state:
+    st.session_state["compare_overlap_pct"] = 5
 
 
 def show_single_address_view():
@@ -329,7 +335,7 @@ def show_single_address_view():
         min_value=0.5,
         max_value=10.0,
         step=0.5,
-        key="shared_radius_km"
+        key="single_radius_km"
     )
 
     min_overlap_pct = st.sidebar.slider(
@@ -337,7 +343,7 @@ def show_single_address_view():
         min_value=0,
         max_value=50,
         step=1,
-        key="shared_overlap_pct"
+        key="single_overlap_pct"
     )
 
     with st.spinner("Building catchment..."):
@@ -577,7 +583,7 @@ def show_comparison_view():
             min_value=0.5,
             max_value=10.0,
             step=0.5,
-            key="shared_radius_km"
+            key="compare_radius_km"
         )
 
     with slider_col2:
@@ -586,7 +592,7 @@ def show_comparison_view():
             min_value=0,
             max_value=50,
             step=1,
-            key="shared_overlap_pct"
+            key="compare_overlap_pct"
         )
 
     with st.spinner("Building comparison catchments..."):

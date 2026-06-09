@@ -214,6 +214,16 @@ pop_039_pct = 0 if total_population == 0 else round(pop_0_39 / total_population 
 nonimm_pct = 0 if total_population == 0 else round(non_immigrants / total_population * 100)
 vm_pct = 0 if total_population == 0 else round(visible_minority / total_population * 100)
 
+total_households = selected["total_households"].fillna(0).sum()
+owner_households = selected["owner_households"].fillna(0).sum()
+bachelors_plus = selected["bachelors_degree_or_higher"].fillna(0).sum()
+
+owner_pct = 0 if total_households == 0 else round(owner_households / total_households * 100)
+bachelors_pct = 0 if total_population == 0 else round(bachelors_plus / total_population * 100)
+
+estimated_da_income = weighted_average_household_income * total_households
+estimated_da_income_millions = estimated_da_income / 1_000_000
+
 st.title(f"Canadian Census by DA - {da_count:,} identified")
 
 st.sidebar.markdown("#### Total Population")
@@ -250,9 +260,21 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-st.sidebar.markdown("#### Median Household Income")
+st.sidebar.markdown("#### Avg Household Income")
 st.sidebar.markdown(
-    f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>${weighted_median_income:,.0f}</div>",
+    f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>${weighted_average_household_income:,.0f}<span style='font-size:20px;color:#CC0000;'>&nbsp;&nbsp;(est DA income ${estimated_da_income_millions:,.1f}M)</span></div>",
+    unsafe_allow_html=True
+)
+
+st.sidebar.markdown("#### Total Households")
+st.sidebar.markdown(
+    f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>{total_households:,.0f}<span style='font-size:20px;color:#CC0000;'>&nbsp;&nbsp;({owner_pct}% owned)</span></div>",
+    unsafe_allow_html=True
+)
+
+st.sidebar.markdown("#### Bachelor+")
+st.sidebar.markdown(
+    f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>{bachelors_plus:,.0f}<span style='font-size:20px;color:#CC0000;'>&nbsp;&nbsp;({bachelors_pct}%)</span></div>",
     unsafe_allow_html=True
 )
 

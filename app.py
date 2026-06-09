@@ -74,7 +74,7 @@ init_persistent_state()
 # Comparison view visual controls
 # Change these pixel values to adjust comparison page font sizes
 # -----------------------------
-COMPARE_PAGE_TITLE_FONT_SIZE = 36
+COMPARE_PAGE_TITLE_FONT_SIZE = 32
 COMPARE_SECTION_TITLE_FONT_SIZE = 26
 COMPARE_MAP_TITLE_FONT_SIZE = 22
 

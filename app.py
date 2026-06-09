@@ -74,6 +74,10 @@ init_persistent_state()
 # Comparison view visual controls
 # Change these pixel values to adjust comparison page font sizes
 # -----------------------------
+COMPARE_PAGE_TITLE_FONT_SIZE = 36
+COMPARE_SECTION_TITLE_FONT_SIZE = 26
+COMPARE_MAP_TITLE_FONT_SIZE = 22
+
 COMPARE_ADDRESS_LABEL_FONT_SIZE = 18
 COMPARE_ADDRESS_INPUT_FONT_SIZE = 18
 COMPARE_SLIDER_LABEL_FONT_SIZE = 18
@@ -84,6 +88,11 @@ COMPARE_TABLE_CELL_FONT_SIZE = 20
 def inject_comparison_css():
     st.markdown(f"""
     <style>
+    /* View toggle text */
+    div[role="radiogroup"] label {{
+        font-size: {COMPARE_ADDRESS_LABEL_FONT_SIZE}px !important;
+    }}
+
     /* Address input labels */
     div[data-testid="stTextInput"] label {{
         font-size: {COMPARE_ADDRESS_LABEL_FONT_SIZE}px !important;
@@ -634,7 +643,10 @@ def comparison_difference(metric_name: str, a, b):
 def show_comparison_view():
     inject_comparison_css()
 
-    st.title("Compare Two Census Catchments")
+    st.markdown(
+        f"<h1 style='font-size:{COMPARE_PAGE_TITLE_FONT_SIZE}px; font-weight:700; margin-bottom:0.5rem;'>Compare Two Census Catchments</h1>",
+        unsafe_allow_html=True
+    )
 
     control_col1, control_col2 = st.columns(2)
 
@@ -748,18 +760,29 @@ def show_comparison_view():
 
     comparison_df = pd.DataFrame(comparison_rows)
 
-    st.subheader("Comparison Summary")
+    st.markdown(
+        f"<h2 style='font-size:{COMPARE_SECTION_TITLE_FONT_SIZE}px; font-weight:700; margin-top:1rem;'>Comparison Summary</h2>",
+        unsafe_allow_html=True
+    )
 
+    # Table font sizes are controlled by COMPARE_TABLE_HEADER_FONT_SIZE
+    # and COMPARE_TABLE_CELL_FONT_SIZE near the top of this file.
     st.table(comparison_df)
 
     map_col1, map_col2 = st.columns(2)
 
     with map_col1:
-        st.markdown(f"#### Address A - {metrics_a['da_count']:,} DAs")
+        st.markdown(
+            f"<div style='font-size:{COMPARE_MAP_TITLE_FONT_SIZE}px; font-weight:700; margin-bottom:0.5rem;'>Address A - {metrics_a['da_count']:,} DAs</div>",
+            unsafe_allow_html=True
+        )
         make_map(catchment_a, radius_km, height=360)
 
     with map_col2:
-        st.markdown(f"#### Address B - {metrics_b['da_count']:,} DAs")
+        st.markdown(
+            f"<div style='font-size:{COMPARE_MAP_TITLE_FONT_SIZE}px; font-weight:700; margin-bottom:0.5rem;'>Address B - {metrics_b['da_count']:,} DAs</div>",
+            unsafe_allow_html=True
+        )
         make_map(catchment_b, radius_km, height=360)
 
 

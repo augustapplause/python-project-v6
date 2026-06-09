@@ -455,7 +455,7 @@ def show_single_address_view():
     bachelors_pct = metrics["bachelors_pct"]
     estimated_da_income_millions = metrics["estimated_da_income_millions"]
 
-    st.title(f"Canadian Census by DA - {da_count:,} identified")
+    st.title(f"Canadian Census - {da_count:,} DAs")
 
     st.sidebar.markdown("#### Total Population")
     st.sidebar.markdown(

@@ -648,9 +648,13 @@ def show_comparison_view():
     control_col1, control_col2 = st.columns(2)
 
     with control_col1:
+        st.markdown(
+            f"<div style='font-size:{COMPARE_ADDRESS_LABEL_FONT_SIZE}px;'>Address A</div>",
+            unsafe_allow_html=True
+        )
         prepare_widget("_compare_address_a", "compare_address_a_value")
         st.text_input(
-            "Address A",
+            "",
             key="_compare_address_a",
             on_change=save_widget_value,
             args=("_compare_address_a", "compare_address_a_value")
@@ -658,9 +662,13 @@ def show_comparison_view():
         address_a = st.session_state["compare_address_a_value"]
 
     with control_col2:
+        st.markdown(
+            f"<div style='font-size:{COMPARE_ADDRESS_LABEL_FONT_SIZE}px;'>Address B</div>",
+            unsafe_allow_html=True
+        )
         prepare_widget("_compare_address_b", "compare_address_b_value")
         st.text_input(
-            "Address B",
+            "",
             key="_compare_address_b",
             on_change=save_widget_value,
             args=("_compare_address_b", "compare_address_b_value")

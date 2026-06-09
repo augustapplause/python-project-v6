@@ -413,12 +413,12 @@ else:
     def highlight_total_row(row):
         if str(row["DA Code"]) == "TOTAL":
             return ["background-color: #FFF2CC; font-weight: bold"] * len(row)
-    return [""] * len(row)
+        return [""] * len(row)
 
-styled_table = (
-    display_table.style
-    .apply(bold_subject_da, axis=1)
-    .apply(highlight_total_row, axis=1)
+    styled_table = (
+        display_table.style
+        .apply(bold_subject_da, axis=1)
+        .apply(highlight_total_row, axis=1)
         .format({
             "Total Population": "{:,.0f}",
             "Population 0-19": "{:,.0f}",

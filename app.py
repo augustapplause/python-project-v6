@@ -104,13 +104,8 @@ def inject_comparison_css():
         font-size: {COMPARE_ADDRESS_INPUT_FONT_SIZE}px !important;
     }}
 
-/* Slider labels */
-div[data-testid="stSlider"] label,
-div[data-testid="stSlider"] label p,
-div[data-testid="stSlider"] p {
-    font-size: {COMPARE_SLIDER_LABEL_FONT_SIZE}px !important;
-    font-weight: 600 !important;
-}
+    /* Slider labels are rendered manually in HTML below.
+       Keep this block empty to avoid fighting Streamlit's internal CSS. */
 
     /* Comparison summary table */
     div[data-testid="stTable"] table {{
@@ -681,7 +676,7 @@ def show_comparison_view():
         )
         prepare_widget("_compare_radius_km", "compare_radius_km_value")
         st.slider(
-            "",
+            label="",
             min_value=0.5,
             max_value=10.0,
             step=0.5,
@@ -698,7 +693,7 @@ def show_comparison_view():
         )
         prepare_widget("_compare_overlap_pct", "compare_overlap_pct_value")
         st.slider(
-            "",
+            label="",
             min_value=0,
             max_value=50,
             step=1,

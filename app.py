@@ -38,7 +38,7 @@ PROVINCE_NAMES = {
 }
 
 DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
-DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
+DEFAULT_ADDRESS_B = "301 Wellington St, Ottawa, Ontario"
 
 
 def init_persistent_state():
@@ -68,7 +68,7 @@ def save_widget_value(widget_key: str, value_key: str):
 init_persistent_state()
 
 DEFAULT_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
-DEFAULT_ADDRESS_B = "1 Presidents Choice Circle, Brampton, Ontario"
+DEFAULT_ADDRESS_B = "301 Wellington St, Ottawa, Ontario"
 
 if "single_radius_km" not in st.session_state:
     st.session_state.single_radius_km = 1.0

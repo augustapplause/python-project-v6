@@ -671,7 +671,7 @@ def show_comparison_view():
 
     with slider_col1:
         st.markdown(
-            f"<div style='font-size:{COMPARE_SLIDER_LABEL_FONT_SIZE}px;font-weight:700;'>Radius (km)</div>",
+            f"<div style='font-size:{COMPARE_SLIDER_LABEL_FONT_SIZE}px;font-weight:400;'>Radius (km)</div>",
             unsafe_allow_html=True
         )
         prepare_widget("_compare_radius_km", "compare_radius_km_value")
@@ -688,7 +688,7 @@ def show_comparison_view():
 
     with slider_col2:
         st.markdown(
-            f"<div style='font-size:{COMPARE_SLIDER_LABEL_FONT_SIZE}px;font-weight:700;'>Min DA overlap (0% = intersection only)</div>",
+            f"<div style='font-size:{COMPARE_SLIDER_LABEL_FONT_SIZE}px;font-weight:400;'>Min DA overlap (0% = intersection only)</div>",
             unsafe_allow_html=True
         )
         prepare_widget("_compare_overlap_pct", "compare_overlap_pct_value")

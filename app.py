@@ -254,7 +254,7 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-st.sidebar.markdown("#### Visible Minority Population")
+st.sidebar.markdown("#### Visible Minority")
 st.sidebar.markdown(
     f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>{visible_minority:,.0f}<span style='font-size:20px;color:#CC0000;'>&nbsp;&nbsp;({vm_pct}%)</span></div>",
     unsafe_allow_html=True
@@ -266,13 +266,13 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-st.sidebar.markdown("#### Total Households")
+st.sidebar.markdown("#### Households")
 st.sidebar.markdown(
     f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>{total_households:,.0f}<span style='font-size:20px;color:#CC0000;'>&nbsp;&nbsp;({owner_pct}% owned)</span></div>",
     unsafe_allow_html=True
 )
 
-st.sidebar.markdown("#### Bachelor+")
+st.sidebar.markdown("#### Bachelor deg+")
 st.sidebar.markdown(
     f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>{bachelors_plus:,.0f}<span style='font-size:20px;color:#CC0000;'>&nbsp;&nbsp;({bachelors_pct}%)</span></div>",
     unsafe_allow_html=True

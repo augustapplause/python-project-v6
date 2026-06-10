@@ -12,6 +12,7 @@ from streamlit_folium import st_folium
 st.set_page_config(page_title="Canadian Census by DA", layout="wide")
 
 RELEASE_BASE_URL = "https://github.com/augustapplause/python-project-v6/releases/download/v1"
+#RELEASE_BASE_URL = "https://github.com/augustapplause/python-project-v1/releases/download/v1"
 
 PROVINCE_FILES = {
     "AB": "AB_da_census_13vars_30m.geojson",
@@ -292,6 +293,10 @@ def build_catchment(address: str, radius_km: float, min_overlap_pct: int):
     owner_households = selected["owner_households"].fillna(0).sum()
     bachelors_plus = selected["bachelors_degree_or_higher"].fillna(0).sum()
 
+    land_area_sq_km = selected["LANDAREA"].fillna(0).sum()
+    population_density = 0 if land_area_sq_km == 0 else total_population / land_area_sq_km
+    household_density = 0 if land_area_sq_km == 0 else total_households / land_area_sq_km
+
     metrics = {
         "da_count": len(selected),
         "total_population": total_population,
@@ -302,6 +307,9 @@ def build_catchment(address: str, radius_km: float, min_overlap_pct: int):
         "weighted_median_income": weighted_median_income,
         "weighted_average_household_income": weighted_average_household_income,
         "total_households": total_households,
+        "land_area_sq_km": land_area_sq_km,
+        "population_density": population_density,
+        "household_density": household_density,
         "owner_households": owner_households,
         "bachelors_plus": bachelors_plus,
         "seniors_pct": 0 if total_population == 0 else round(seniors_65 / total_population * 100),
@@ -445,6 +453,8 @@ def show_single_address_view():
     weighted_median_income = metrics["weighted_median_income"]
     weighted_average_household_income = metrics["weighted_average_household_income"]
     total_households = metrics["total_households"]
+    population_density = metrics["population_density"]
+    household_density = metrics["household_density"]
     owner_households = metrics["owner_households"]
     bachelors_plus = metrics["bachelors_plus"]
     seniors_pct = metrics["seniors_pct"]
@@ -496,6 +506,18 @@ def show_single_address_view():
     st.sidebar.markdown("#### Households")
     st.sidebar.markdown(
         f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>{total_households:,.0f}<span style='font-size:20px;color:#CC0000;'>&nbsp;&nbsp;({owner_pct}% owned)</span></div>",
+        unsafe_allow_html=True
+    )
+
+    st.sidebar.markdown("#### Population Density")
+    st.sidebar.markdown(
+        f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>{population_density:,.0f}<span style='font-size:20px;color:#CC0000;'>&nbsp;&nbsp;/ sq km</span></div>",
+        unsafe_allow_html=True
+    )
+
+    st.sidebar.markdown("#### Household Density")
+    st.sidebar.markdown(
+        f"<div style='font-size:28px;font-weight:bold;margin-top:-22px;'>{household_density:,.0f}<span style='font-size:20px;color:#CC0000;'>&nbsp;&nbsp;/ sq km</span></div>",
         unsafe_allow_html=True
     )
 
@@ -619,6 +641,8 @@ def comparison_value(metric_name: str, value):
         return f"${value:,.0f}"
     if metric_name == "Estimated DA Income":
         return f"${value / 1_000_000:,.1f}M"
+    if metric_name in ["Population Density", "Household Density"]:
+        return f"{value:,.0f} / sq km"
     return f"{value:,.0f}"
 
 
@@ -632,6 +656,10 @@ def comparison_difference(metric_name: str, a, b):
     if metric_name == "Estimated DA Income":
         sign = "+" if diff >= 0 else "-"
         return f"{sign}${abs(diff) / 1_000_000:,.1f}M"
+
+    if metric_name in ["Population Density", "Household Density"]:
+        sign = "+" if diff >= 0 else "-"
+        return f"{sign}{abs(diff):,.0f} / sq km"
 
     sign = "+" if diff >= 0 else ""
     return f"{sign}{diff:,.0f}"
@@ -756,6 +784,18 @@ def show_comparison_view():
             "Address A": f"{metrics_a['total_households']:,.0f} ({metrics_a['owner_pct']}% owned)",
             "Address B": f"{metrics_b['total_households']:,.0f} ({metrics_b['owner_pct']}% owned)",
             "Difference": comparison_difference("Number of Households", metrics_a["total_households"], metrics_b["total_households"]),
+        },
+        {
+            "Metric": "Population Density",
+            "Address A": comparison_value("Population Density", metrics_a["population_density"]),
+            "Address B": comparison_value("Population Density", metrics_b["population_density"]),
+            "Difference": comparison_difference("Population Density", metrics_a["population_density"], metrics_b["population_density"]),
+        },
+        {
+            "Metric": "Household Density",
+            "Address A": comparison_value("Household Density", metrics_a["household_density"]),
+            "Address B": comparison_value("Household Density", metrics_b["household_density"]),
+            "Difference": comparison_difference("Household Density", metrics_a["household_density"], metrics_b["household_density"]),
         },
         {
             "Metric": "Avg Household Income",

@@ -1623,17 +1623,17 @@ def show_comparison_view():
 def show_batch_processor_view():
     st.title("Batch CSV or XLS for census statistics")
 
-st.markdown(
-    """
-    Upload a CSV, XLS, or XLSX file.<br>
-    First row must be headers (minimum `latitude`, `longitude`, or `address`).<br>
-    If `latitude` and/or `longitude` are blank, the app attempts ArcGIS geocoding using the `address` column.<br>
-    An optional `province` or `province_code` column can improve geocoding and speed up DA matching.<br>
-    Output retains all uploaded columns and appends census statistics.<br>
-    If extra numeric columns are included, a second correlation CSV will be generated automatically.
-    """,
-    unsafe_allow_html=True
-)
+    st.markdown(
+        """
+        Upload a CSV, XLS, or XLSX file.<br>
+        First row must be headers (minimum `latitude`, `longitude`, or `address`).<br>
+        If `latitude` and/or `longitude` are blank, the app attempts ArcGIS geocoding using the `address` column.<br>
+        An optional `province` or `province_code` column can improve geocoding and speed up DA matching.<br>
+        Output retains all uploaded columns and appends census statistics.<br>
+        If extra numeric columns are included, a second correlation CSV will be generated automatically.
+        """,
+        unsafe_allow_html=True
+    )
 
     uploaded_file = st.file_uploader(
         "Upload address file",

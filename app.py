@@ -980,6 +980,40 @@ def get_independent_variable_columns(output_df: pd.DataFrame, original_cols: lis
     return independent_cols
 
 
+
+def coerce_numeric_for_csv(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert numeric-looking object columns to numeric before CSV export.
+    This helps Excel recognize values as numbers instead of text.
+    Text/status columns remain text.
+    """
+    cleaned = df.copy()
+
+    for col in cleaned.columns:
+        if pd.api.types.is_numeric_dtype(cleaned[col]):
+            continue
+
+        series_as_text = cleaned[col].astype(str).str.strip()
+
+        numeric_candidate = (
+            series_as_text
+            .str.replace(",", "", regex=False)
+            .str.replace("$", "", regex=False)
+            .str.replace("%", "", regex=False)
+        )
+
+        converted = pd.to_numeric(numeric_candidate, errors="coerce")
+
+        non_blank = series_as_text.ne("") & series_as_text.str.lower().ne("nan")
+        if non_blank.sum() == 0:
+            continue
+
+        if converted[non_blank].notna().all():
+            cleaned[col] = converted
+
+    return cleaned
+
+
 def build_correlation_table(output_df: pd.DataFrame, original_cols: list[str]) -> pd.DataFrame:
     independent_cols = get_independent_variable_columns(output_df, original_cols)
 
@@ -1688,9 +1722,12 @@ def show_batch_processor_view():
             if numeric_col in correlation_df.columns:
                 correlation_df[numeric_col] = pd.to_numeric(correlation_df[numeric_col], errors="coerce")
 
+        output_df_for_csv = coerce_numeric_for_csv(output_df)
+        correlation_df_for_csv = coerce_numeric_for_csv(correlation_df)
+
         st.session_state["batch_output_preview_df"] = output_df.head(50)
-        st.session_state["batch_catchment_csv_bytes"] = output_df.to_csv(index=False).encode("utf-8-sig")
-        st.session_state["batch_correlation_csv_bytes"] = correlation_df.to_csv(index=False, na_rep="").encode("utf-8-sig")
+        st.session_state["batch_catchment_csv_bytes"] = output_df_for_csv.to_csv(index=False).encode("utf-8-sig")
+        st.session_state["batch_correlation_csv_bytes"] = correlation_df_for_csv.to_csv(index=False, na_rep="").encode("utf-8-sig")
         st.session_state["batch_detected_independent_cols"] = detected_independent_cols
         st.session_state["batch_processing_complete"] = True
 

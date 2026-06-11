@@ -1683,9 +1683,14 @@ def show_batch_processor_view():
             original_cols=list(input_df.columns)
         )
 
+        # Force correlation numeric fields to remain numeric in the CSV output where values exist.
+        for numeric_col in ["pearson_correlation", "abs_correlation", "n"]:
+            if numeric_col in correlation_df.columns:
+                correlation_df[numeric_col] = pd.to_numeric(correlation_df[numeric_col], errors="coerce")
+
         st.session_state["batch_output_preview_df"] = output_df.head(50)
         st.session_state["batch_catchment_csv_bytes"] = output_df.to_csv(index=False).encode("utf-8-sig")
-        st.session_state["batch_correlation_csv_bytes"] = correlation_df.to_csv(index=False).encode("utf-8-sig")
+        st.session_state["batch_correlation_csv_bytes"] = correlation_df.to_csv(index=False, na_rep="").encode("utf-8-sig")
         st.session_state["batch_detected_independent_cols"] = detected_independent_cols
         st.session_state["batch_processing_complete"] = True
 

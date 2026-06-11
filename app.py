@@ -75,6 +75,55 @@ BATCH_OUTPUT_COLUMNS = [
     "household_density",
 ]
 
+CORRELATION_CENSUS_COLUMNS = [
+    "da_count",
+    "total_population",
+    "population_0_19",
+    "population_20_39",
+    "population_40_64",
+    "population_65_plus",
+    "population_0_39",
+    "non_immigrants",
+    "visible_minority_population",
+    "total_households",
+    "owner_households",
+    "renter_households",
+    "average_household_income",
+    "median_household_income",
+    "bachelors_degree_or_higher",
+    "owner_pct",
+    "renter_pct",
+    "bachelor_pct",
+    "seniors_pct",
+    "population_0_39_pct",
+    "visible_minority_pct",
+    "non_immigrant_pct",
+    "estimated_da_income",
+    "land_area_sq_km",
+    "population_density",
+    "household_density",
+]
+
+CORRELATION_LOCATION_COLUMNS = {
+    "latitude",
+    "lat",
+    "longitude",
+    "lon",
+    "long",
+    "address",
+    "store_address",
+    "full_address",
+    "location_address",
+    "addr",
+    "province",
+    "province_code",
+    "prov",
+    "pr",
+    "state",
+}
+
+ZERO_CORRELATION_THRESHOLD = 0.001
+
 DEFAULT_SINGLE_ADDRESS = "50 Victoria St, Gatineau, Quebec"
 DEFAULT_COMPARE_ADDRESS_A = "50 Victoria St, Gatineau, Quebec"
 DEFAULT_COMPARE_ADDRESS_B = "301 Wellington St, Ottawa, Ontario"
@@ -912,6 +961,107 @@ def process_batch_file(
     return output_df[original_cols + remaining_cols + appended_cols]
 
 
+
+def get_independent_variable_columns(output_df: pd.DataFrame, original_cols: list[str]) -> list[str]:
+    independent_cols = []
+
+    for col in original_cols:
+        normalized_col = str(col).strip().lower()
+
+        if normalized_col in CORRELATION_LOCATION_COLUMNS:
+            continue
+
+        if col in CORRELATION_CENSUS_COLUMNS or col in BATCH_OUTPUT_COLUMNS:
+            continue
+
+        if col in output_df.columns and pd.api.types.is_numeric_dtype(output_df[col]):
+            independent_cols.append(col)
+
+    return independent_cols
+
+
+def build_correlation_table(output_df: pd.DataFrame, original_cols: list[str]) -> pd.DataFrame:
+    independent_cols = get_independent_variable_columns(output_df, original_cols)
+
+    census_cols = [
+        col for col in CORRELATION_CENSUS_COLUMNS
+        if col in output_df.columns and pd.api.types.is_numeric_dtype(output_df[col])
+    ]
+
+    if len(independent_cols) == 0:
+        return pd.DataFrame([{
+            "target_variable": "",
+            "catchment_variable": "",
+            "pearson_correlation": "",
+            "abs_correlation": "",
+            "n": "",
+            "status": "No numeric independent variables detected. Correlation analysis was skipped.",
+        }])
+
+    rows = []
+
+    for target_col in independent_cols:
+        target_rows = []
+
+        for census_col in census_cols:
+            pair = output_df[[target_col, census_col]].dropna()
+
+            if len(pair) < 3:
+                corr = None
+            else:
+                corr = pair[target_col].corr(pair[census_col])
+
+            if pd.isna(corr):
+                corr = None
+
+            target_rows.append({
+                "target_variable": target_col,
+                "catchment_variable": census_col,
+                "pearson_correlation": corr,
+                "abs_correlation": None if corr is None else abs(corr),
+                "n": len(pair),
+                "status": "",
+            })
+
+        valid_corrs = [
+            row["abs_correlation"]
+            for row in target_rows
+            if row["abs_correlation"] is not None
+        ]
+
+        if len(valid_corrs) == 0:
+            rows.append({
+                "target_variable": target_col,
+                "catchment_variable": "",
+                "pearson_correlation": "",
+                "abs_correlation": "",
+                "n": "",
+                "status": f"{target_col} had insufficient numeric data for correlation analysis.",
+            })
+        elif max(valid_corrs) < ZERO_CORRELATION_THRESHOLD:
+            rows.append({
+                "target_variable": target_col,
+                "catchment_variable": "",
+                "pearson_correlation": "",
+                "abs_correlation": "",
+                "n": "",
+                "status": f"{target_col} is zero correlation with all pulled census variables.",
+            })
+        else:
+            rows.extend(target_rows)
+
+    corr_df = pd.DataFrame(rows)
+    sort_df = corr_df.copy()
+    sort_df["_sort_abs"] = pd.to_numeric(sort_df["abs_correlation"], errors="coerce").fillna(-1)
+    sort_df = sort_df.sort_values(
+        ["target_variable", "_sort_abs"],
+        ascending=[True, False]
+    ).drop(columns=["_sort_abs"])
+
+    return sort_df
+
+
+
 def make_map(catchment: dict, radius_km: float, height: int = 430):
     geo = catchment["geo"]
     selected = catchment["selected"]
@@ -1427,7 +1577,8 @@ def show_batch_processor_view():
         "Upload a CSV, XLS, or XLSX file. First row must be headers (minimum 'latitude', 'longitude', or 'address'). "
         "If `latitude` and/or `longitude` are blank, the app attempts to ArcGIS geocode the 'address' column. "
         "An optional `province` or `province_code` column can improve geocoding and speed up DA matching. "
-        "Output CSV will retain all columns and append census stats."
+        "Output will retain all columns and append census stats. "
+        "If extra numeric columns are included, a second correlation CSV will also be available."
     )
 
     uploaded_file = st.file_uploader(
@@ -1525,17 +1676,45 @@ def show_batch_processor_view():
                 geocode_max_retries=int(geocode_max_retries),
             )
 
+        correlation_df = build_correlation_table(output_df, original_cols=list(input_df.columns))
+
+        detected_independent_cols = get_independent_variable_columns(
+            output_df,
+            original_cols=list(input_df.columns)
+        )
+
         st.success("Batch processing complete.")
+
+        if len(detected_independent_cols) == 0:
+            st.info("No numeric independent variables detected. Correlation tab will contain a skipped-analysis note.")
+        else:
+            st.info(
+                "Detected independent variables for correlation: "
+                + ", ".join([str(col) for col in detected_independent_cols])
+            )
+
         st.dataframe(output_df.head(50), use_container_width=True)
 
-        csv_bytes = output_df.to_csv(index=False).encode("utf-8-sig")
+        catchment_csv_bytes = output_df.to_csv(index=False).encode("utf-8-sig")
+        correlation_csv_bytes = correlation_df.to_csv(index=False).encode("utf-8-sig")
 
-        st.download_button(
-            label="Download enriched CSV",
-            data=csv_bytes,
-            file_name="batch_catchment_census_output.csv",
-            mime="text/csv",
-        )
+        download_col1, download_col2 = st.columns(2)
+
+        with download_col1:
+            st.download_button(
+                label="Download enriched catchment CSV",
+                data=catchment_csv_bytes,
+                file_name="batch_catchment_census_output.csv",
+                mime="text/csv",
+            )
+
+        with download_col2:
+            st.download_button(
+                label="Download correlation CSV",
+                data=correlation_csv_bytes,
+                file_name="batch_correlation_output.csv",
+                mime="text/csv",
+            )
 
 
 view_mode = st.radio(

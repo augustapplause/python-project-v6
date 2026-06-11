@@ -1426,7 +1426,7 @@ def show_batch_processor_view():
     st.markdown(
         "Upload a CSV, XLS, or XLSX file. First row must be headers (minimum 'latitude', 'longitude', or 'address'). "
         "If `latitude` and/or `longitude` are blank, the app attempts to ArcGIS geocode the 'address' column. "
-        "An optional `province` or `province_code` column can improve geocoding and speed up DA matching."
+        "An optional `province` or `province_code` column can improve geocoding and speed up DA matching. "
         "Output CSV will retain all columns and append census stats."
     )
 

@@ -1626,10 +1626,10 @@ def show_batch_processor_view():
     st.markdown(
         """
         Upload a CSV, XLS, or XLSX file.<br>
-        First row must be headers (minimum `latitude`, `longitude`, or `address`).<br>
+        First row must be headers (minimum `latitude` & `longitude`, or `address` to parse).<br>
         If `latitude` and/or `longitude` are blank, the app attempts ArcGIS geocoding using the `address` column.<br>
         An optional `province` or `province_code` column can improve geocoding and speed up DA matching.<br>
-        Output retains all uploaded columns and appends census statistics.<br>
+        Output CSV retains all uploaded columns and appends census statistics.<br>
         If extra numeric columns are included, a second correlation CSV will be generated automatically.
         """,
         unsafe_allow_html=True

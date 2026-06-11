@@ -486,6 +486,67 @@ def find_first_case_insensitive_column(df: pd.DataFrame, candidates: list[str]) 
     return None
 
 
+def normalize_province_code(value) -> str | None:
+    if pd.isna(value):
+        return None
+
+    text = str(value).strip()
+
+    if text == "":
+        return None
+
+    province_name_lookup = {
+        "alberta": "AB",
+        "british columbia": "BC",
+        "manitoba": "MB",
+        "new brunswick": "NB",
+        "newfoundland and labrador": "NL",
+        "newfoundland": "NL",
+        "labrador": "NL",
+        "nova scotia": "NS",
+        "northwest territories": "NT",
+        "nunavut": "NU",
+        "ontario": "ON",
+        "prince edward island": "PE",
+        "pei": "PE",
+        "quebec": "QC",
+        "québec": "QC",
+        "saskatchewan": "SK",
+        "yukon": "YT",
+    }
+
+    upper_text = text.upper()
+
+    if upper_text in PROVINCE_FILES:
+        return upper_text
+
+    return province_name_lookup.get(text.lower())
+
+
+def append_province_to_address(address: str, province_value) -> str:
+    province_code = normalize_province_code(province_value)
+
+    if province_code is None:
+        return address
+
+    if not isinstance(address, str):
+        address = str(address)
+
+    address_text = address.strip()
+
+    if address_text == "":
+        return address_text
+
+    # Avoid duplicating province if user already included it.
+    lower_address = address_text.lower()
+    province_name = PROVINCE_NAMES.get(province_code, "").lower()
+
+    if province_code.lower() in lower_address or province_name in lower_address:
+        return address_text
+
+    return f"{address_text}, {province_code}, Canada"
+
+
 def excel_column_letters_to_index(cell_ref: str) -> int:
     letters = "".join(ch for ch in cell_ref if ch.isalpha()).upper()
     index = 0
@@ -667,10 +728,16 @@ def build_catchment_from_lat_lon(
     radius_km: float,
     min_overlap_pct: int,
     province_gdfs: dict,
+    preferred_province_code: str | None = None,
 ):
     point_wgs84, point_3347, buffer_3347 = make_buffer(lat, lon, radius_km)
 
-    for province_code, da_gdf in province_gdfs.items():
+    if preferred_province_code in province_gdfs:
+        province_items = [(preferred_province_code, province_gdfs[preferred_province_code])]
+    else:
+        province_items = list(province_gdfs.items())
+
+    for province_code, da_gdf in province_items:
         point_match = da_gdf[da_gdf.geometry.contains(point_wgs84)]
 
         if len(point_match) == 0:
@@ -740,6 +807,11 @@ def process_batch_file(
         ["address", "store_address", "full_address", "location_address", "addr"]
     )
 
+    province_col = find_first_case_insensitive_column(
+        df,
+        ["province", "province_code", "prov", "pr", "state"]
+    )
+
     province_gdfs = load_all_provinces_for_batch(RELEASE_BASE_URL)
 
     output_rows = []
@@ -760,6 +832,7 @@ def process_batch_file(
 
         lat = pd.to_numeric(row.get(lat_col), errors="coerce")
         lon = pd.to_numeric(row.get(lon_col), errors="coerce")
+        preferred_province_code = normalize_province_code(row.get(province_col)) if province_col is not None else None
 
         try:
             if pd.isna(lat) or pd.isna(lon):
@@ -770,8 +843,13 @@ def process_batch_file(
                     progress_bar.progress(row_number / total_rows)
                     continue
 
-                geo, geocode_status = geocode_address_with_retry(
+                address_for_geocoding = append_province_to_address(
                     str(row.get(address_col, "")),
+                    row.get(province_col) if province_col is not None else None
+                )
+
+                geo, geocode_status = geocode_address_with_retry(
+                    address_for_geocoding,
                     max_retries=geocode_max_retries,
                     delay_seconds=geocode_delay_seconds,
                 )
@@ -800,6 +878,7 @@ def process_batch_file(
                 radius_km=radius_km,
                 min_overlap_pct=min_overlap_pct,
                 province_gdfs=province_gdfs,
+                preferred_province_code=preferred_province_code,
             )
 
             if catchment["error"] is not None:
@@ -1345,7 +1424,8 @@ def show_batch_processor_view():
 
     st.markdown(
         "Upload a CSV, XLS, or XLSX file. The first row must contain headers. "
-        "If `latitude` and/or `longitude` are blank, the app will try ArcGIS geocoding using an address column."
+        "If `latitude` and/or `longitude` are blank, the app will try ArcGIS geocoding using an address column. "
+        "An optional `province` or `province_code` column can improve geocoding and speed up DA matching."
     )
 
     uploaded_file = st.file_uploader(
@@ -1411,6 +1491,14 @@ def show_batch_processor_view():
         input_df,
         ["address", "store_address", "full_address", "location_address", "addr"]
     )
+
+    province_col = find_first_case_insensitive_column(
+        input_df,
+        ["province", "province_code", "prov", "pr", "state"]
+    )
+
+    if province_col is not None:
+        st.info(f"Using province column `{province_col}` when available.")
 
     if lat_col is None or lon_col is None:
         if address_col is None:

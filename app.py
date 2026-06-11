@@ -1,10 +1,12 @@
 import io
 import time
+import zipfile
 import requests
 import pandas as pd
 import geopandas as gpd
 import streamlit as st
 import folium
+import xml.etree.ElementTree as ET
 
 from geopy.geocoders import ArcGIS
 from shapely.geometry import Point
@@ -484,14 +486,160 @@ def find_first_case_insensitive_column(df: pd.DataFrame, candidates: list[str]) 
     return None
 
 
+def excel_column_letters_to_index(cell_ref: str) -> int:
+    letters = "".join(ch for ch in cell_ref if ch.isalpha()).upper()
+    index = 0
+
+    for ch in letters:
+        index = index * 26 + (ord(ch) - ord("A") + 1)
+
+    return index - 1
+
+
+def read_xlsx_without_openpyxl(uploaded_file) -> pd.DataFrame:
+    """
+    Lightweight XLSX reader used when openpyxl is unavailable on Streamlit Cloud.
+    It reads the first worksheet and supports normal values, shared strings,
+    inline strings, numbers, blanks, and first-row headers.
+    """
+    uploaded_file.seek(0)
+    file_bytes = uploaded_file.read()
+
+    with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
+        ns = {
+            "main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+            "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
+        }
+
+        shared_strings = []
+
+        if "xl/sharedStrings.xml" in z.namelist():
+            shared_root = ET.fromstring(z.read("xl/sharedStrings.xml"))
+
+            for si in shared_root.findall("main:si", ns):
+                parts = []
+
+                for t in si.findall(".//main:t", ns):
+                    parts.append(t.text or "")
+
+                shared_strings.append("".join(parts))
+
+        workbook_root = ET.fromstring(z.read("xl/workbook.xml"))
+        first_sheet = workbook_root.find("main:sheets/main:sheet", ns)
+
+        if first_sheet is None:
+            raise ValueError("No worksheets found in XLSX file.")
+
+        rel_id = first_sheet.attrib.get(
+            "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+        )
+
+        rels_root = ET.fromstring(z.read("xl/_rels/workbook.xml.rels"))
+        sheet_target = None
+
+        for rel in rels_root.findall("rel:Relationship", ns):
+            if rel.attrib.get("Id") == rel_id:
+                sheet_target = rel.attrib.get("Target")
+                break
+
+        if sheet_target is None:
+            raise ValueError("Could not identify the first worksheet in the XLSX file.")
+
+        if sheet_target.startswith("/"):
+            sheet_path = sheet_target.lstrip("/")
+        else:
+            sheet_path = "xl/" + sheet_target
+
+        sheet_path = sheet_path.replace("xl/xl/", "xl/")
+
+        sheet_root = ET.fromstring(z.read(sheet_path))
+        rows = []
+
+        for row in sheet_root.findall(".//main:sheetData/main:row", ns):
+            values_by_col = {}
+            max_col = -1
+
+            for cell in row.findall("main:c", ns):
+                cell_ref = cell.attrib.get("r", "")
+                col_idx = excel_column_letters_to_index(cell_ref)
+                max_col = max(max_col, col_idx)
+
+                cell_type = cell.attrib.get("t")
+                value_node = cell.find("main:v", ns)
+                inline_node = cell.find("main:is/main:t", ns)
+
+                if cell_type == "s":
+                    if value_node is None or value_node.text is None:
+                        value = ""
+                    else:
+                        value = shared_strings[int(value_node.text)]
+                elif cell_type == "inlineStr":
+                    value = "" if inline_node is None or inline_node.text is None else inline_node.text
+                else:
+                    value = "" if value_node is None or value_node.text is None else value_node.text
+
+                values_by_col[col_idx] = value
+
+            if max_col >= 0:
+                rows.append([values_by_col.get(i, "") for i in range(max_col + 1)])
+
+        if len(rows) == 0:
+            return pd.DataFrame()
+
+        max_len = max(len(row) for row in rows)
+        normalized_rows = [row + [""] * (max_len - len(row)) for row in rows]
+
+        headers = [str(value).strip() for value in normalized_rows[0]]
+        data_rows = normalized_rows[1:]
+
+        # Handle duplicate or blank headers safely.
+        cleaned_headers = []
+        seen = {}
+
+        for i, header in enumerate(headers):
+            if header == "":
+                header = f"Unnamed_{i + 1}"
+
+            if header in seen:
+                seen[header] += 1
+                header = f"{header}_{seen[header]}"
+            else:
+                seen[header] = 0
+
+            cleaned_headers.append(header)
+
+        df = pd.DataFrame(data_rows, columns=cleaned_headers)
+
+        # Convert numeric-looking columns where possible.
+        for col in df.columns:
+            converted = pd.to_numeric(df[col], errors="ignore")
+            df[col] = converted
+
+        return df
+
+
 def read_uploaded_table(uploaded_file) -> pd.DataFrame:
     filename = uploaded_file.name.lower()
 
     if filename.endswith(".csv"):
         return pd.read_csv(uploaded_file)
 
-    if filename.endswith(".xlsx") or filename.endswith(".xls"):
-        return pd.read_excel(uploaded_file)
+    if filename.endswith(".xlsx"):
+        try:
+            uploaded_file.seek(0)
+            return pd.read_excel(uploaded_file, engine="openpyxl")
+        except ImportError:
+            return read_xlsx_without_openpyxl(uploaded_file)
+
+    if filename.endswith(".xls"):
+        try:
+            uploaded_file.seek(0)
+            return pd.read_excel(uploaded_file)
+        except ImportError as exc:
+            raise ValueError(
+                "Old .xls files require the xlrd package on Streamlit Cloud. "
+                "Please save the file as .xlsx or .csv, or add xlrd to requirements.txt."
+            ) from exc
 
     raise ValueError("Upload must be a CSV, XLS, or XLSX file.")
 

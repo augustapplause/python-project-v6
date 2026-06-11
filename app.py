@@ -1421,11 +1421,11 @@ def show_comparison_view():
 
 
 def show_batch_processor_view():
-    st.title("Batch CSV or XLS")
+    st.title("Batch CSV or XLS for census statistics")
 
     st.markdown(
-        "Upload a CSV, XLS, or XLSX file. The first row must contain headers. "
-        "If `latitude` and/or `longitude` are blank, the app will try ArcGIS geocoding using an address column. "
+        "Upload a CSV, XLS, or XLSX file. First row must be headers (minimum 'latitude', 'longitude', or 'address'. "
+        "If `latitude` and/or `longitude` are blank, the app attempts ArcGIS geocoding the 'address' column. "
         "An optional `province` or `province_code` column can improve geocoding and speed up DA matching."
     )
 

@@ -1683,37 +1683,46 @@ def show_batch_processor_view():
             original_cols=list(input_df.columns)
         )
 
+        st.session_state["batch_output_preview_df"] = output_df.head(50)
+        st.session_state["batch_catchment_csv_bytes"] = output_df.to_csv(index=False).encode("utf-8-sig")
+        st.session_state["batch_correlation_csv_bytes"] = correlation_df.to_csv(index=False).encode("utf-8-sig")
+        st.session_state["batch_detected_independent_cols"] = detected_independent_cols
+        st.session_state["batch_processing_complete"] = True
+
+    if st.session_state.get("batch_processing_complete", False):
         st.success("Batch processing complete.")
 
+        detected_independent_cols = st.session_state.get("batch_detected_independent_cols", [])
+
         if len(detected_independent_cols) == 0:
-            st.info("No numeric independent variables detected. Correlation tab will contain a skipped-analysis note.")
+            st.info("No numeric independent variables detected. Correlation CSV will contain a skipped-analysis note.")
         else:
             st.info(
                 "Detected independent variables for correlation: "
                 + ", ".join([str(col) for col in detected_independent_cols])
             )
 
-        st.dataframe(output_df.head(50), use_container_width=True)
-
-        catchment_csv_bytes = output_df.to_csv(index=False).encode("utf-8-sig")
-        correlation_csv_bytes = correlation_df.to_csv(index=False).encode("utf-8-sig")
+        if "batch_output_preview_df" in st.session_state:
+            st.dataframe(st.session_state["batch_output_preview_df"], use_container_width=True)
 
         download_col1, download_col2 = st.columns(2)
 
         with download_col1:
             st.download_button(
                 label="Download enriched catchment CSV",
-                data=catchment_csv_bytes,
+                data=st.session_state["batch_catchment_csv_bytes"],
                 file_name="batch_catchment_census_output.csv",
                 mime="text/csv",
+                key="download_batch_catchment_csv",
             )
 
         with download_col2:
             st.download_button(
                 label="Download correlation CSV",
-                data=correlation_csv_bytes,
+                data=st.session_state["batch_correlation_csv_bytes"],
                 file_name="batch_correlation_output.csv",
                 mime="text/csv",
+                key="download_batch_correlation_csv",
             )
 
 

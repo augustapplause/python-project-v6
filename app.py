@@ -611,9 +611,18 @@ def read_xlsx_without_openpyxl(uploaded_file) -> pd.DataFrame:
         df = pd.DataFrame(data_rows, columns=cleaned_headers)
 
         # Convert numeric-looking columns where possible.
+        # Avoid pandas errors="ignore" because some Streamlit environments reject it.
         for col in df.columns:
-            converted = pd.to_numeric(df[col], errors="ignore")
-            df[col] = converted
+            converted = pd.to_numeric(df[col], errors="coerce")
+
+            # Only replace the column if conversion did not wipe out real text values.
+            non_blank_original = df[col].astype(str).str.strip().ne("")
+            converted_non_null = converted.notna()
+
+            if non_blank_original.sum() == 0:
+                df[col] = converted
+            elif converted_non_null.sum() == non_blank_original.sum():
+                df[col] = converted
 
         return df
 

@@ -1184,7 +1184,7 @@ def show_single_address_view():
 
         def highlight_total_row(row):
             if str(row["DA Code"]) == "TOTAL":
-                return ["background-color: #FFF2CC; font-weight: bold"] * len(row)
+                return ["background-color: #003366; color: white; font-weight: bold"] * len(row)
             return [""] * len(row)
 
         styled_table = (
